@@ -1,0 +1,5 @@
+# Immich data and filled-in compose files: never in git.
+library/
+postgres/
+*.local.yml
+.env
