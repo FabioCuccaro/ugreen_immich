@@ -14,6 +14,16 @@ immich-go reads the Takeout zips directly (no need to extract them), matches eac
 
 With the [external library](../README.md#3-add-the-external-library) set up, most of your recent photos are already in Immich. The Takeout is for the gaps: older phones, photos removed from the phone with "Free up space", photos saved from shared albums. The dry run in step 3 tells you how many are really missing. Photos whose metadata Google rewrote won't match by checksum and show up as duplicates: clean them up with **Utilities → Duplicates** in Immich.
 
+## If you already extracted a Takeout into the synced folder
+
+Then the photos are already in Immich through the external library, and immich-go is not needed for them: it uploads into Immich's own library and cannot edit files in a read-only external library. Three things to check, because Immich does not read Google's `.json` files (it reads `.xmp` sidecars):
+
+1. **Dates.** Photos without a date in their EXIF (WhatsApp images, screenshots, scans, some edits) get the file's date, often the day you extracted the zip. In the Immich timeline, look for one day with an unusually large number of photos. To fix them, write the JSON dates into the files before Immich reads them, for example with [Google Photos Takeout Helper](https://github.com/Xentraxx/GooglePhotosTakeoutHelper) on a copy, then rescan the library. ⚠️ Not tested.
+2. **Duplicates.** A photo that is both in the Takeout and in the phone sync is two files, so Immich shows it twice. Use **Utilities → Duplicates**.
+3. **Albums** are not recreated: in the Takeout they are only folders and JSON files.
+
+A new Takeout plus immich-go `--dry-run` is still useful if the old export is out of date.
+
 ## 1. Request the Takeout
 
 Before requesting it, save to your own library the photos from albums **shared by others** that you want to keep: they are not yours for Takeout. Move out anything in the *Locked Folder* too.

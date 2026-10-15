@@ -14,6 +14,16 @@ immich-go legge direttamente gli zip di Takeout (non serve scompattarli), abbina
 
 Con la [libreria esterna](guida.md#3-libreria-esterna) attiva, le foto recenti sono già in Immich. Il Takeout serve per i buchi: telefoni precedenti, foto cancellate dal telefono con "Libera spazio", foto salvate dagli album condivisi. Il dry-run del passo 3 ti dice quante ne mancano davvero. Le foto di cui Google ha riscritto i metadati non coincidono per checksum e risultano doppie: si puliscono con **Utilità → Duplicati** in Immich.
 
+## Se hai già scompattato un Takeout nella cartella sincronizzata
+
+Allora le foto sono già in Immich tramite la libreria esterna e per quelle immich-go non serve: carica nella libreria di Immich e non può modificare i file di una libreria esterna in sola lettura. Ci sono tre cose da controllare, perché Immich non legge i file `.json` di Google (legge i sidecar `.xmp`):
+
+1. **Date.** Le foto senza data negli EXIF (immagini di WhatsApp, screenshot, scansioni, alcune modifiche) prendono la data del file, spesso il giorno in cui hai scompattato lo zip. Nella timeline di Immich cerca un giorno con un numero di foto anomalo. Per correggerle bisogna scrivere le date dei JSON dentro i file prima che Immich li legga, per esempio con [Google Photos Takeout Helper](https://github.com/Xentraxx/GooglePhotosTakeoutHelper) su una copia, e poi riscansionare la libreria. ⚠️ Non provato.
+2. **Doppioni.** Una foto che è sia nel Takeout sia nella sincronizzazione del telefono è due file, quindi Immich la mostra due volte. Usa **Utilità → Duplicati**.
+3. **Album:** non vengono ricreati, perché nel Takeout sono solo cartelle e file JSON.
+
+Un Takeout nuovo con immich-go in `--dry-run` serve ancora se quello vecchio non è aggiornato.
+
 ## 1. Chiedere il Takeout
 
 Prima di chiederlo, salva nella tua libreria le foto degli album **condivisi da altri** che vuoi tenere: per Takeout non sono tue. Sposta fuori anche quello che hai nella *Cartella protetta*.
