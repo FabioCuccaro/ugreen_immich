@@ -1,0 +1,82 @@
+# Immich on a UGREEN NAS (UGOS: Docker -> Project, folder docker/immich).
+# Based on the official Immich v3 docker-compose.yml and example.env:
+# https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
+#
+# The .env values are written inline, so the whole file can be pasted into the
+# UGOS Project editor without a separate .env file.
+#
+# Before starting, replace the two placeholders:
+#   <database password>  letters and digits only (A-Za-z0-9), no spaces or symbols
+#   /home/<user>/Photos/MobileBackup
+#                        host path of the folder your phone syncs to with the
+#                        UGREEN app (personal folders live under /home/<user>)
+# Never commit the filled-in file.
+
+name: immich
+
+x-immich-env: &immich-env
+  TZ: Europe/Rome # your timezone, from the tz database list
+  DB_PASSWORD: &db-password <database password>
+  DB_USERNAME: postgres
+  DB_DATABASE_NAME: immich
+
+services:
+  immich-server:
+    container_name: immich_server
+    # Immich has no :stable tag. v3 follows every Immich 3.x release and never
+    # jumps to Immich 4 on its own; change it by hand after reading the notes.
+    image: ghcr.io/immich-app/immich-server:v3
+    volumes:
+      # Immich's own library: uploads, thumbnails, encoded videos, database dumps.
+      - ./library:/data
+      # Photos already synced by the UGREEN app, read-only. In Immich add them as
+      # an external library with the path /external/photos.
+      - /home/<user>/Photos/MobileBackup:/external/photos:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment: *immich-env
+    ports:
+      - '2283:2283'
+    depends_on:
+      - redis
+      - database
+    restart: always
+    healthcheck:
+      disable: false
+
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:v3
+    volumes:
+      - model-cache:/cache
+    environment: *immich-env
+    restart: always
+    healthcheck:
+      disable: false
+
+  redis:
+    container_name: immich_redis
+    image: docker.io/valkey/valkey:9@sha256:c123e3715db63d06d4ad6964884037aa0d5d4d703939b9929954112889708e1d
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
+    restart: always
+
+  database:
+    container_name: immich_postgres
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    environment:
+      POSTGRES_PASSWORD: *db-password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      # Remove this line if ./postgres is on an SSD.
+      DB_STORAGE_TYPE: 'HDD'
+    volumes:
+      # The database must be on a local disk of the NAS, never on a network share.
+      - ./postgres:/var/lib/postgresql/data
+    shm_size: 128mb
+    restart: always
+    healthcheck:
+      disable: false
+
+volumes:
+  model-cache:
